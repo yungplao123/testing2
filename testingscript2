@@ -1,64 +1,79 @@
--- Script to create ESP with box and health bar for each player in the game
-local Player = game.Players.LocalPlayer
-local Drawing = game:GetService("Drawing")
-local Camera = workspace.CurrentCamera
+-- Xeno Client-Side ESP Script
 
--- Function to create ESP for a given player
+-- Check if Xeno is available
+if not pcall(function() return getgenv().Drawing end) then
+    error("Xeno environment not detected!")
+    return
+end
+
+-- Services
+local Camera = workspace.CurrentCamera
+local Player = game.Players.LocalPlayer
+local Players = game.Players
+local RunService = game:GetService("RunService")
+
+-- ESP drawing elements (box and health bar)
 local function createESP(target)
-    -- Create the ESP box and health bar
+    -- Create the ESP elements (box and health bar)
     local box = Drawing.new("Square")
     local healthBar = Drawing.new("Line")
-
-    -- Set drawing properties
-    box.Color = Color3.fromRGB(0, 255, 0)
+    
+    -- Set up box properties
+    box.Color = Color3.fromRGB(0, 255, 0)  -- Green box
     box.Thickness = 2
     box.Transparency = 1
     box.Filled = false
 
-    healthBar.Color = Color3.fromRGB(0, 255, 0)
+    -- Set up health bar properties
+    healthBar.Color = Color3.fromRGB(0, 255, 0)  -- Green health bar
     healthBar.Thickness = 3
     healthBar.Transparency = 1
 
-    -- Update ESP every frame
-    game:GetService("RunService").RenderStepped:Connect(function()
+    -- Update ESP for the target player
+    RunService.RenderStepped:Connect(function()
         local char = target.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
-            -- Get the screen position of the player
             local pos, onScreen = Camera:WorldToViewportPoint(char.HumanoidRootPart.Position)
-            
-            -- Check if player is on screen
+
             if onScreen then
-                -- Get player's health
+                -- Get player's health info
                 local health = target.Character.Humanoid.Health
                 local maxHealth = target.Character.Humanoid.MaxHealth
                 local healthPercent = health / maxHealth
 
-                -- Draw the box around the player
-                box.Size = Vector2.new(100, 150) -- Box size
+                -- Set the size and position of the box
+                box.Size = Vector2.new(100, 150)  -- Width and height of the box
                 box.Position = Vector2.new(pos.X - box.Size.X / 2, pos.Y - box.Size.Y / 2)
 
-                -- Draw the health bar beside the box
+                -- Set the position and length of the health bar
                 healthBar.From = Vector2.new(pos.X + box.Size.X / 2 + 5, pos.Y - box.Size.Y / 2)
                 healthBar.To = Vector2.new(pos.X + box.Size.X / 2 + 5, pos.Y - box.Size.Y / 2 + 150 * healthPercent)
-                
+
+                -- Show ESP elements (box and health bar)
+                box.Visible = true
+                healthBar.Visible = true
             else
-                -- Remove drawing if player is not on screen
+                -- Hide ESP elements if player is off-screen
                 box.Visible = false
                 healthBar.Visible = false
             end
+        else
+            -- If target doesn't have a character, hide ESP elements
+            box.Visible = false
+            healthBar.Visible = false
         end
     end)
 end
 
--- Run the ESP for each player
-for _, player in ipairs(game.Players:GetPlayers()) do
+-- Create ESP for all players (except the local player)
+for _, player in ipairs(Players:GetPlayers()) do
     if player ~= Player then
         createESP(player)
     end
 end
 
--- Update ESP for new players that join
-game.Players.PlayerAdded:Connect(function(player)
+-- Create ESP for new players that join
+Players.PlayerAdded:Connect(function(player)
     if player ~= Player then
         createESP(player)
     end
